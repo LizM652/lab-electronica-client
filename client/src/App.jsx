@@ -8,7 +8,7 @@ import {
 // =========================================================
 // CONFIGURACIÓN DE APIS Y CLOUDINARY (Uso de Variables de Entorno de Vite)
 // =========================================================
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://lab-electronica-server.onrender.com/';
 const LOGO_TESJO = "https://res.cloudinary.com/j2frsaie/image/upload/v1790570178/Logo-TESJo.jpg";
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "j2frsaie"; 
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "inventario_tesjo";
