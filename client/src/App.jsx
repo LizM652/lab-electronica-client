@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 
 // =========================================================
-// CONFIGURACIÓN DE APIS Y CLOUDINARY (Uso de Variables de Entorno de Vite)
+// CONFIGURACIÓN DE APIS Y CLOUDINARY (Variables de Entorno Vite)
 // =========================================================
-const API_URL = import.meta.env.VITE_API_URL || 'https://lab-electronica-server.onrender.com/';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const LOGO_TESJO = "https://res.cloudinary.com/j2frsaie/image/upload/v1790570178/Logo-TESJo.jpg";
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "j2frsaie"; 
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "inventario_tesjo";
@@ -27,7 +27,7 @@ export default function App() {
 
   // Estado para el archivo local seleccionado y clave para reiniciar el input file
   const [selectedFile, setSelectedFile] = useState(null);
-  const [fileInputKey, setFileInputKey] = useState(Date.now());
+  const [fileInputKey, setFileInputKey] = useState(() => Date.now());
 
   const [form, setForm] = useState({
     name: '',
@@ -66,7 +66,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Error al cargar inventario:", err);
-      } fontal {
+      } finally {
         if (isMounted) {
           setLoading(false);
         }
@@ -163,7 +163,7 @@ export default function App() {
 
       // Limpiar formulario y reiniciar input file
       setSelectedFile(null);
-      setFileInputKey(Date.now());
+      setFileInputKey(prev => prev + 1);
       setForm({ 
         name: '', 
         category: 'Kits de Herramientas', 
