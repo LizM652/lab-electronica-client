@@ -5,14 +5,13 @@ import {
   ShieldCheck, UserCheck, Package, Info, Upload, ExternalLink, Loader2
 } from 'lucide-react';
 
+// =========================================================
+// CONFIGURACIÓN DE APIS Y CLOUDINARY (Uso de Variables de Entorno de Vite)
+// =========================================================
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// =========================================================
-// CONFIGURACIÓN DE CLOUDINARY Y LOGO
-// =========================================================
 const LOGO_TESJO = "https://res.cloudinary.com/j2frsaie/image/upload/v1790570178/Logo-TESJo.jpg";
-const CLOUDINARY_CLOUD_NAME = "j2frsaie"; 
-const CLOUDINARY_UPLOAD_PRESET = "inventario_tesjo";
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "j2frsaie"; 
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "inventario_tesjo";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -26,8 +25,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Estado para el archivo local seleccionado
+  // Estado para el archivo local seleccionado y clave para reiniciar el input file
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
 
   const [form, setForm] = useState({
     name: '',
@@ -40,7 +40,7 @@ export default function App() {
     imageUrl: ''
   });
 
-  // Cargar inventario desde el backend (para recargas manuales)
+  // Cargar inventario desde el backend
   const fetchComponents = async () => {
     setLoading(true);
     try {
@@ -53,7 +53,7 @@ export default function App() {
     }
   };
 
-  // Carga inicial al montar el componente (Evita llamadas sincrónicas a setState)
+  // Carga inicial al montar el componente
   useEffect(() => {
     let isMounted = true;
 
@@ -66,7 +66,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Error al cargar inventario:", err);
-      } finally {
+      } fontal {
         if (isMounted) {
           setLoading(false);
         }
@@ -88,7 +88,7 @@ export default function App() {
         setCurrentUser('admin');
         setPasswordInput('');
       } else {
-        setLoginError('Contraseña de administrador incorrecta. (Prueba: admin123)');
+        setLoginError('Contraseña de administrador incorrecta.');
       }
     } else {
       setCurrentUser('student');
@@ -101,49 +101,39 @@ export default function App() {
     setLoginError('');
   };
 
-  // Función para subir la imagen a Cloudinary
+  // Subida de imagen a Cloudinary
   const uploadToCloudinary = async (file) => {
-    console.log("--> Subiendo archivo a Cloudinary:", file.name, file.type, file.size);
-    
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
     const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-    
     const res = await axios.post(url, formData);
-    console.log("--> Respuesta de Cloudinary exitosa:", res.data);
     return res.data.secure_url;
   };
 
   // Manejador del envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("=== INICIO DE ENVÍO ===");
-    console.log("Archivo seleccionado:", selectedFile);
-
     setUploadingImage(true);
 
     try {
       let finalImageUrl = form.imageUrl;
 
-      // 1. Subir imagen a Cloudinary si el usuario seleccionó un archivo
+      // 1. Subir imagen a Cloudinary si existe un archivo seleccionado
       if (selectedFile) {
         try {
           finalImageUrl = await uploadToCloudinary(selectedFile);
-          console.log("--> URL obtenida de Cloudinary:", finalImageUrl);
         } catch (cloudinaryErr) {
-          console.error("❌ ERROR EN CLOUDINARY:", cloudinaryErr);
+          console.error("Error en Cloudinary:", cloudinaryErr);
           const errorMsg = cloudinaryErr.response?.data?.error?.message || cloudinaryErr.message;
           alert(`Error al subir la imagen: ${errorMsg}`);
           setUploadingImage(false);
           return;
         }
-      } else {
-        console.warn("⚠️ No se seleccionó archivo local.");
       }
 
-      // 2. Preparar payload compatible con el backend
+      // 2. Mapeo y formateo de datos para el backend
       const allowedCategories = ['Resistencias', 'Capacitores', 'Semiconductores', 'Circuitos Integrados', 'Módulos y Sensores', 'Otros'];
       const safeCategory = allowedCategories.includes(form.category) ? form.category : 'Otros';
 
@@ -169,13 +159,11 @@ export default function App() {
         sku: autoSku
       };
 
-      console.log("--> Enviando Payload al backend:", payload);
+      await axios.post(`${API_URL}/components`, payload);
 
-      const response = await axios.post(`${API_URL}/components`, payload);
-      console.log("--> Respuesta del Servidor:", response.data);
-
-      // Limpiar formulario y archivo seleccionado
+      // Limpiar formulario y reiniciar input file
       setSelectedFile(null);
+      setFileInputKey(Date.now());
       setForm({ 
         name: '', 
         category: 'Kits de Herramientas', 
@@ -188,10 +176,10 @@ export default function App() {
       });
       
       fetchComponents();
-      alert("¡Registro e imagen guardados con éxito!");
+      alert("¡Registro guardado con éxito!");
 
     } catch (err) {
-      console.error("❌ ERROR BACKEND:", err.response?.data || err);
+      console.error("Error del backend:", err.response?.data || err);
       const msg = err.response?.data?.error || err.response?.data?.message || err.message;
       alert(`Error en el servidor: ${msg}`);
     } finally {
@@ -209,7 +197,7 @@ export default function App() {
     }
   };
 
-  // Filtrado de elementos
+  // Filtrado reactivo de componentes
   const filteredComponents = components.filter(c => {
     const matchesSearch = c.name?.toLowerCase().includes(search.toLowerCase()) || 
                           (c.value && c.value.toLowerCase().includes(search.toLowerCase())) ||
@@ -263,7 +251,7 @@ export default function App() {
                 <input
                   type="password"
                   required
-                  placeholder="Contraseña (admin123)"
+                  placeholder="Ingresa la contraseña"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-900"
@@ -281,7 +269,7 @@ export default function App() {
           </form>
 
           <div className="pt-2 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-400">Laboratorio de Ingeniería Mecatrónica / Electrónica — TESJo</p>
+            <p className="text-[11px] text-slate-400">Laboratorio de Arquitectura de Computadoras — TESJo</p>
           </div>
         </div>
       </div>
@@ -398,14 +386,15 @@ export default function App() {
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-lg p-2">
                   <Upload className="w-4 h-4 text-slate-400 shrink-0" />
                   <input 
+                    key={fileInputKey}
                     type="file" 
                     accept="image/*"
+                    disabled={uploadingImage}
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      console.log("Archivo capturado en input:", file);
-                      setSelectedFile(file);
+                      setSelectedFile(file || null);
                     }}
-                    className="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200 cursor-pointer"
+                    className="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200 cursor-pointer disabled:opacity-50"
                   />
                 </div>
                 {selectedFile && (
